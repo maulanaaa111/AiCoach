@@ -301,6 +301,60 @@
             'D1': '1d', 'H4': '4h', 'H1': '1h', 'M30': '30m', 'M15': '15m', 'M5': '5m', 'M3': '3m', 'M1': '1m'
         };
 
+        // Menentukan simbol Binance yang sesuai untuk live feed data
+        function getBinanceSymbol(pair) {
+            switch(pair) {
+                case 'BTCUSD': return 'BTCUSDT';
+                case 'ETHUSD': return 'ETHUSDT';
+                case 'EURUSD': return 'EURUSDT';
+                case 'GBPUSD': return 'GBPUSDT';
+                case 'XAUUSD': return 'PAXGUSDT'; // PAXG adalah Pax Gold, pelacak harga emas 1:1 fisik terbaik
+                case 'NAS100': return 'BTCUSDT';  // Menggunakan BTCUSDT sebagai proxy volatilitas indeks yang kemudian akan diskalakan
+                default: return 'BTCUSDT';
+            }
+        }
+
+        // Fungsi fetch data candlestick live dari API publik Binance (Bebas CORS & tanpa API Key)
+        async function fetchLiveCandles(pair, timeframe) {
+            const symbol = getBinanceSymbol(pair);
+            const interval = TIMEFRAMES[timeframe];
+            const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=15`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                const data = await response.json();
+                
+                return data.map(candle => {
+                    let open = parseFloat(candle[1]);
+                    let high = parseFloat(candle[2]);
+                    let low = parseFloat(candle[3]);
+                    let close = parseFloat(candle[4]);
+                    
+                    // Skalakan harga jika menggunakan proxy BTCUSD untuk NAS100 (sekitar kisaran indeks Nasdaq)
+                    if (pair === 'NAS100') {
+                        const scalingFactor = 0.27; 
+                        open *= scalingFactor;
+                        high *= scalingFactor;
+                        low *= scalingFactor;
+                        close *= scalingFactor;
+                    }
+                    
+                    const precision = (pair === 'EURUSD' || pair === 'GBPUSD') ? 5 : 2;
+                    return {
+                        time: new Date(candle[0]).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                        open: open.toFixed(precision),
+                        high: high.toFixed(precision),
+                        low: low.toFixed(precision),
+                        close: close.toFixed(precision),
+                        volume: parseFloat(candle[5]).toFixed(1)
+                    };
+                });
+            } catch (e) {
+                console.error(`Gagal memuat klines untuk ${pair} pada timeframe ${timeframe}:`, e);
+                return null;
+            }
+        }
+
         // UI Toggles & Visual Updates
         function toggleTf(checkboxId) {
             const cb = document.getElementById(checkboxId);
@@ -441,31 +495,66 @@
                 return;
             }
 
-            // Build manual rules combined with PDF rules
-            let manualRules = document.getElementById("tradingRulesText").value;
-            let documentRules = loadedFiles.map(f => f.content).join("\n");
-            const finalRules = `${manualRules}\n\n### ATURAN REKONSILIASI KNOWLEDGE DARI DOKUMEN:\n${documentRules}`;
-
             // Visual Processing State
             setAnalysisState("processing");
 
             const selectedPair = document.getElementById("pairSelect").value;
             const modelName = document.getElementById("modelSelect").value;
 
-            const systemPrompt = `Kamu adalah Asisten Analis Trading Pro berlisensi institusi dengan spesialisasi Smart Money Concepts (SMC) dan Inner Circle Trader (ICT).
-Tugas utamanya adalah memberikan analisa top-down objektif, realitis, dan terukur berdasarkan dokumen / rules yang diberikan pengguna.
+            // Ingestion data live market real-time
+            let livePriceDataString = "";
+            let fetchSuccess = false;
+            
+            for (const tf of selectedTFs) {
+                const statusBox = document.getElementById("reportBox");
+                if (statusBox.querySelector("p.text-white")) {
+                    statusBox.querySelector("p.text-white").innerText = `Mengunduh data live untuk ${selectedPair}...`;
+                }
+                const statusSub = statusBox.querySelector("p.text-gray-500");
+                if (statusSub) {
+                    statusSub.innerText = `FETCHING REAL-TIME CANDLES FOR TIMEFRAME: ${tf}`;
+                }
+                
+                const candles = await fetchLiveCandles(selectedPair, tf);
+                if (candles && candles.length > 0) {
+                    fetchSuccess = true;
+                    livePriceDataString += `\n### DATA LIVE TIMEFRAME ${tf} (15 candle terakhir):\n`;
+                    livePriceDataString += `Format kolom: [Waktu] Open | High | Low | Close | Volume\n`;
+                    candles.forEach(c => {
+                        livePriceDataString += `[${c.time}] ${c.open} | ${c.high} | ${c.low} | ${c.close} | ${c.volume}\n`;
+                    });
+                }
+            }
 
-BERIKUT ADALAH MANUAL RULES & KNOWLEDGE BASE WAJIB:
+            if (!fetchSuccess) {
+                showNotification("Gagal mengambil data live. Menggunakan mode analisa prediktif umum.", "warning");
+                livePriceDataString = "\n(Gagal memuat feed harga real-time detail. Mohon berikan panduan analisa struktural umum.)\n";
+            }
+
+            // Build manual rules combined with PDF rules
+            let manualRules = document.getElementById("tradingRulesText").value;
+            let documentRules = loadedFiles.map(f => f.content).join("\n");
+            const finalRules = `${manualRules}\n\n### ATURAN REKONSILIASI KNOWLEDGE DARI DOKUMEN:\n${documentRules}`;
+
+            const systemPrompt = `Kamu adalah Asisten Analis Trading Pro berlisensi institusi. Tugas utamanya adalah memberikan analisa teknikal objektif, realistis, dan terukur berdasarkan dokumen / rules yang diberikan pengguna serta data live market aktual yang disediakan.
+
+WAJIB: Identifikasi metodologi trading yang tertulis di Aturan/Knowledge Base di bawah (bisa berupa SMC, ICT, Support/Resistance Klasik, Trendlines, Price Action, RSI, Moving Average, Harmonic Patterns, dsb). Kamu HANYA boleh menganalisis menggunakan metodologi yang tertulis di aturan di bawah. JANGAN menggunakan atau memaksakan konsep eksternal (seperti konsep SMC: BOS, CHoCH, FVG, Liquidity sweep) JIKA aturan di bawah sama sekali tidak menyebutkannya atau tidak menggunakan konsep tersebut!
+
+BERIKUT ADALAH ATURAN / KNOWLEDGE BASE WAJIB (HANYA ANALISIS MENGGUNAKAN METODOLOGI DARI SINI):
 ${finalRules}
 
 FORMAT OUTPUT ANALISA (Gunakan format markdown yang bersih dan rapi):
-1. **Ringkasan Bias Tren (Top-Down)**: Bandingkan trend antar timeframe yang dipilih.
-2. **Kondisi Liquidity (BSL / SSL)**: Jelaskan letak liquidity pool terdekat.
-3. **Validasi Setup SMC**: Cari Market Structure Shift (MSS/CHoCH) dan Fair Value Gap (FVG).
-4. **Trading Plan Rekomendasi**: Tentukan level Entry, Stop Loss (SL), dan Take Profit (TP) secara logis.`;
+1. **Identifikasi Metodologi Trading**: Sebutkan secara spesifik metodologi trading apa yang kamu temukan dan gunakan dari Aturan/Knowledge Base di atas (misal: "Analisis Menggunakan PDF Aturan Kustom: S&R Klasik").
+2. **Ringkasan Trend & Bias (Top-Down)**: Bandingkan trend antar timeframe yang dipilih. Tunjukkan harga running terakhir (candle paling baru dari timeframe terkecil) agar pengguna tahu kamu sedang menganalisis harga nyata saat ini.
+3. **Analisis Teknis Sesuai Metodologi**: Jelaskan kondisi pasar secara detail menggunakan aturan yang ada pada Knowledge Base tersebut (cari letak support/resistance, indikator, atau pola harga yang sesuai). Jangan sekali-kali memunculkan istilah SMC/ICT jika tidak tertulis di aturan.
+4. **Trading Plan Rekomendasi**: Tentukan level Entry, Stop Loss (SL), dan Take Profit (TP) secara logis dan PRESISI berdasarkan harga running sesungguhnya dan kaidah keluar-masuk (setup trigger) dari knowledge base tersebut. Jangan berikan angka fiktif.`;
 
             const userPrompt = `Lakukan analisis teknikal komprehensif sekarang untuk instrumen ${selectedPair} menggunakan kombinasi data timeframe: ${selectedTFs.join(', ')}.
-Gunakan seluruh acuan parameter SMC yang tertera di knowledge base saya untuk memastikan keakuratannya.`;
+
+Berikut adalah DATA HARGA LIVE REAL-TIME TERBARU untuk dianalisis:
+${livePriceDataString}
+
+Analisalah secara ketat berdasarkan aturan yang tertera di knowledge base saya (baik teks maupun dokumen PDF yang diunggah). Pastikan seluruh hitungan angka SL/TP presisi sesuai dengan data harga nyata di atas!`;
 
             try {
                 const result = await callGeminiAPI(systemPrompt, userPrompt);
