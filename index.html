@@ -399,30 +399,72 @@
         // File Handler
         async function handleFiles(files) {
             const list = document.getElementById('fileList');
+            
             for (let file of files) {
                 // Check if already loaded
                 if (loadedFiles.some(f => f.name === file.name)) continue;
 
-                const fileObj = { name: file.name, content: "" };
-                list.innerHTML += `
-                    <div id="file-${file.name.replace(/\s+/g, '')}" class="flex items-center justify-between bg-chartDark/80 px-3 py-1.5 rounded-lg border border-chartBorder text-[10px] animate-fadeIn">
-                        <span class="text-blue-400 truncate max-w-[80%]"><i class="fa-solid fa-file-pdf mr-1 text-red-400"></i> ${file.name}</span>
-                        <button onclick="removeFile('${file.name}')" class="text-gray-500 hover:text-red-400 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>`;
+                // Gunakan id unik yang aman tanpa karakter aneh
+                const fileId = `file-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+                
+                // Buat element penampung di UI secara independen (menghindari bug innerHTML += async)
+                const fileDiv = document.createElement('div');
+                fileDiv.id = fileId;
+                fileDiv.className = "flex items-center justify-between bg-chartDark/80 px-3 py-1.5 rounded-lg border border-chartBorder text-[10px] animate-fadeIn";
+                fileDiv.innerHTML = `
+                    <span class="text-blue-400 truncate max-w-[65%] flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> 
+                        <span class="truncate font-medium">${file.name}</span>
+                    </span>
+                    <span class="text-gray-500 flex items-center gap-1 font-mono text-[9px]" id="status-${fileId}">
+                        <i class="fa-solid fa-spinner animate-spin text-blue-500 mr-1"></i> Membaca...
+                    </span>
+                `;
+                list.appendChild(fileDiv);
 
-                if (file.type === "application/pdf") {
-                    fileObj.content = await extractPdfText(file);
-                } else {
-                    fileObj.content = await file.text();
+                try {
+                    let content = "";
+                    if (file.type === "application/pdf") {
+                        content = await extractPdfText(file);
+                    } else {
+                        content = await file.text();
+                    }
+
+                    // Simpan data text yang berhasil diekstrak ke dalam array global
+                    loadedFiles.push({ name: file.name, content: content });
+
+                    // Update UI status keberhasilan ekstraksi beserta jumlah karakter
+                    const statusEl = document.getElementById(`status-${fileId}`);
+                    if (statusEl) {
+                        statusEl.className = "text-emerald-400 flex items-center gap-1.5 font-mono text-[9px]";
+                        statusEl.innerHTML = `
+                            <span>(${content.length.toLocaleString('id-ID')} karakter)</span>
+                            <button onclick="removeFile('${file.name}')" class="text-gray-500 hover:text-red-400 transition-colors ml-1" title="Hapus">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        `;
+                    }
+                } catch (err) {
+                    console.error("Gagal membaca berkas:", file.name, err);
+                    const statusEl = document.getElementById(`status-${fileId}`);
+                    if (statusEl) {
+                        statusEl.className = "text-red-400 flex items-center gap-1.5 font-mono text-[9px]";
+                        statusEl.innerHTML = `
+                            <span>Gagal membaca</span>
+                            <button onclick="removeFile('${file.name}')" class="text-gray-500 hover:text-red-400 transition-colors ml-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        `;
+                    }
                 }
-                loadedFiles.push(fileObj);
             }
-            showNotification(`${files.length} berkas berhasil diunggah!`, "success");
+            showNotification(`${files.length} berkas berhasil diproses!`, "success");
         }
 
         function removeFile(filename) {
             loadedFiles = loadedFiles.filter(f => f.name !== filename);
-            const el = document.getElementById(`file-${filename.replace(/\s+/g, '')}`);
+            const fileId = `file-${filename.replace(/[^a-zA-Z0-9]/g, '')}`;
+            const el = document.getElementById(fileId);
             if (el) el.remove();
             showNotification("Berkas dihapus", "info");
         }
@@ -531,10 +573,15 @@
                 livePriceDataString = "\n(Gagal memuat feed harga real-time detail. Mohon berikan panduan analisa struktural umum.)\n";
             }
 
-            // Build manual rules combined with PDF rules
+            // Gabungkan materi rules tertulis dengan seluruh teks dari banyak PDF yang diupload
             let manualRules = document.getElementById("tradingRulesText").value;
-            let documentRules = loadedFiles.map(f => f.content).join("\n");
-            const finalRules = `${manualRules}\n\n### ATURAN REKONSILIASI KNOWLEDGE DARI DOKUMEN:\n${documentRules}`;
+            
+            // Format setiap PDF secara terpisah agar AI bisa mengidentifikasi masing-masing file
+            let documentRules = loadedFiles.map((f, index) => {
+                return `--- MULAI DOKUMEN ${index + 1}: ${f.name} ---\n${f.content}\n--- SELESAI DOKUMEN ${index + 1} ---`;
+            }).join("\n\n");
+
+            const finalRules = `${manualRules}\n\n### ATURAN REKONSILIASI KNOWLEDGE DARI SELURUH DOKUMEN PDF/TEXT (${loadedFiles.length} Berkas):\n${documentRules}`;
 
             const systemPrompt = `Kamu adalah Asisten Analis Trading Pro berlisensi institusi. Tugas utamanya adalah memberikan analisa teknikal objektif, realistis, dan terukur berdasarkan dokumen / rules yang diberikan pengguna serta data live market aktual yang disediakan.
 
