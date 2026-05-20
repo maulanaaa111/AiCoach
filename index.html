@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMC AI-Trading Terminal v2.0</title>
+    <title>SMC AI-Trading Terminal Pro v2.5</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Marked.js for Markdown Parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- TradingView Widget Script -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <!-- PDF.js for PDF Reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -22,881 +24,628 @@
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        chartDark: '#0B0E14',
-                        chartCard: '#131722',
-                        chartBorder: '#2A2E39',
-                        chartText: '#D1D4DC',
-                        chartAccent: '#2962FF',
-                        chartGreen: '#089981',
-                        chartRed: '#F23645'
+                        chartDark: '#07090e',
+                        chartCard: '#0f131c',
+                        chartBorder: '#1e2533',
+                        chartText: '#9ca3af',
+                        chartAccent: '#2563eb',
+                        chartAccentGlow: '#3b82f6',
+                        chartGreen: '#10b981',
+                        chartRed: '#ef4444'
                     }
                 }
             }
         }
     </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0B0E14;
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #07090e; 
+            background-image: radial-gradient(circle at 50% 0%, #111827 0%, #07090e 70%);
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #131722;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2A2E39;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #363A45;
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #0f131c; }
+        ::-webkit-scrollbar-thumb { background: #1e2533; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+        .glass-panel {
+            background: rgba(15, 19, 28, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(30, 37, 51, 0.8);
         }
     </style>
 </head>
 <body class="text-chartText min-h-screen flex flex-col justify-between">
 
-    <!-- NAV BAR -->
-    <nav class="bg-chartCard border-b border-chartBorder px-4 py-3 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-chartAccent/10 p-2 rounded-lg text-chartAccent border border-chartAccent/30">
-                    <i class="fa-solid fa-brain-circuit text-xl sm:text-2xl animate-pulse"></i>
+    <nav class="glass-panel border-b border-chartBorder/60 px-6 py-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-500/10 p-2.5 rounded-xl text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                        <i class="fa-solid fa-microchip-ai text-2xl animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-md sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                            SMC AI-Trading Terminal <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-500/20 uppercase tracking-widest">v2.5 Live</span>
+                        </h1>
+                        <p class="text-[10px] text-gray-500 font-mono">STATION: INTUITIVE ANALYSIS DESK</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-lg sm:text-xl font-bold text-white tracking-wide flex items-center gap-2">
-                        SMC AI-Trading Terminal <span class="bg-chartAccent/20 text-chartAccent text-[10px] font-semibold px-2 py-0.5 rounded-full border border-chartAccent/30">V2.0 LIVE</span>
-                    </h1>
-                    <p class="text-[11px] text-gray-400">Automated Multi-Timeframe (Multi-TF) Market Scanner</p>
+                <!-- Status indicator mobile -->
+                <div class="lg:hidden flex items-center gap-1.5 bg-zinc-900/80 px-2.5 py-1 rounded-full border border-zinc-800">
+                    <span class="w-2 h-2 rounded-full bg-red-500" id="statusIndicatorMobile"></span>
+                    <span class="text-[10px] uppercase font-mono tracking-wider" id="statusTextMobile">Discon</span>
                 </div>
             </div>
             
-            <!-- API Key Input -->
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <div class="relative w-full sm:w-64">
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                <!-- Model Selector -->
+                <div class="relative w-full sm:w-48">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                        <i class="fa-solid fa-gears text-xs"></i>
+                    </span>
+                    <select id="modelSelect" class="w-full bg-chartDark border border-chartBorder rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer appearance-none">
+                        <option value="gemini-3.5-flash">Gemini 3.5 Flash (Custom)</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash (Stabil)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500 text-[10px]">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </span>
+                </div>
+
+                <!-- API Key Input -->
+                <div class="relative w-full sm:w-72">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                         <i class="fa-solid fa-key text-xs"></i>
                     </span>
                     <input type="password" id="apiKeyInput" placeholder="Masukkan Gemini API Key..." 
-                        class="w-full bg-chartDark border border-chartBorder rounded-lg py-1.5 pl-9 pr-8 text-xs text-white focus:outline-none focus:border-chartAccent transition-colors">
-                    <button onclick="toggleApiKeyVisibility()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-white">
-                        <i id="apiKeyEyeIcon" class="fa-solid fa-eye text-xs"></i>
+                        class="w-full bg-chartDark border border-chartBorder rounded-xl py-2 pl-9 pr-16 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors">
+                    <button onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-10 flex items-center px-2 text-gray-500 hover:text-white transition-colors" title="Lihat Key">
+                        <i id="togglePassIcon" class="fa-solid fa-eye-slash text-xs"></i>
+                    </button>
+                    <button onclick="saveApiKey()" class="absolute right-1.5 top-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md transition-colors">
+                        Simpan
                     </button>
                 </div>
-                <button onclick="saveApiKey()" class="bg-chartAccent hover:bg-chartAccent/90 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap">
-                    <i class="fa-solid fa-floppy-disk"></i> Simpan Key
-                </button>
+
+                <!-- Status indicator Desktop -->
+                <div class="hidden lg:flex items-center gap-2 bg-chartDark/80 px-3 py-1.5 rounded-xl border border-chartBorder">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500" id="statusIndicator"></span>
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-gray-400" id="statusText">Disconnected</span>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN CONTAINER -->
-    <main class="max-w-7xl mx-auto p-4 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- LEFT PANEL (Knowledge Base & Inputs) -->
+        <!-- LEFT PANEL (KONTROL & PENGETAHUAN) -->
         <section class="lg:col-span-5 flex flex-col gap-6">
             
-            <!-- 1. KNOWLEDGE BASE MANAGER -->
-            <div class="bg-chartCard border border-chartBorder rounded-xl p-5 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-book-bookmark text-chartAccent"></i> 1. Materi / Trading Rules
+            <!-- Knowledge Base Widget -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-blue-500"></i> Knowledge Base
                     </h2>
-                    <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-medium">Auto-Trained</span>
+                    <button onclick="loadDefaultSMCRules()" class="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-file-code"></i> Load SMC Preset
+                    </button>
                 </div>
                 
-                <p class="text-xs text-gray-400 mb-3">
-                    Modifikasi aturan atau materi trading di bawah ini. AI akan menggunakannya sebagai landasan utama untuk mendeteksi setups pasar secara otomatis.
-                </p>
-
-                <!-- Tabs/Presets of Material -->
-                <div class="grid grid-cols-3 gap-1.5 mb-3">
-                    <button onclick="loadPreset('smc')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center">
-                        SMC Basics
-                    </button>
-                    <button onclick="loadPreset('ict')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center">
-                        ICT Core
-                    </button>
-                    <button onclick="loadPreset('clean')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center text-red-400">
-                        Kosongkan
-                    </button>
-                </div>
-
-                <!-- Textarea for manual rules -->
-                <div class="relative">
-                    <textarea id="tradingRulesText" rows="10" 
-                        class="w-full bg-chartDark border border-chartBorder rounded-lg p-3 text-xs text-chartText focus:outline-none focus:border-chartAccent font-mono leading-relaxed"
-                        placeholder="Tulis atau paste aturan trading/materi kamu di sini..."></textarea>
-                    <div class="absolute bottom-2 right-2 text-[10px] text-gray-500 font-mono" id="charCount">0 karakter</div>
+                <textarea id="tradingRulesText" rows="5" 
+                    class="w-full bg-chartDark border border-chartBorder rounded-xl p-3 text-xs text-chartText focus:outline-none focus:border-blue-500 font-sans resize-y"
+                    placeholder="Tulis Trading Rules manual kamu disini, atau klik tombol Load SMC Preset di atas..."></textarea>
+                
+                <!-- File Upload Dropzone -->
+                <div class="relative group">
+                    <input type="file" id="fileUpload" multiple accept=".txt,.pdf" class="hidden" onchange="handleFiles(this.files)">
+                    <div onclick="document.getElementById('fileUpload').click()" 
+                         class="border-2 border-dashed border-chartBorder hover:border-blue-500/60 rounded-xl p-4 text-center cursor-pointer bg-chartDark/40 transition-all flex flex-col items-center gap-2 group-hover:bg-chartDark/80">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                        </div>
+                        <div class="text-xs text-gray-300 font-medium">Unggah Dokumen Aturan (PDF / TXT)</div>
+                        <div class="text-[10px] text-gray-500">Mendukung berkas ganda sekaligus</div>
+                    </div>
+                    <div id="fileList" class="mt-3 space-y-1.5 max-h-32 overflow-y-auto"></div>
                 </div>
             </div>
 
-            <!-- 2. PAIR & LIVE DATA CONFIGURATION -->
-            <div class="bg-chartCard border border-chartBorder rounded-xl p-5 shadow-lg">
-                <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
-                    <i class="fa-solid fa-circle-nodes text-chartAccent"></i> 2. Pilih Asset & Engine Multi-TF
-                </h2>
-                
-                <div class="space-y-4">
-                    <!-- Pair Selector -->
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1.5 font-semibold">Pilih Asset / Pair Utama:</label>
-                        <select id="pairSelect" onchange="onPairChanged()" class="w-full bg-chartDark border border-chartBorder rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-chartAccent">
-                            <option value="BTCUSD">Bitcoin (BTC/USD)</option>
-                            <option value="ETHUSD">Ethereum (ETH/USD)</option>
-                            <option value="EURUSD">EUR/USD (Forex)</option>
-                            <option value="GBPUSD">GBP/USD (Forex)</option>
-                            <option value="AUDUSD">AUD/USD (Forex)</option>
-                            <option value="XAUUSD">Gold (XAU/USD)</option>
-                            <option value="NAS100">NAS100 (Nasdaq Index Proxy)</option>
-                            <option value="US30">US30 (Dow Jones Index Proxy)</option>
-                            <option value="CUSTOM">Custom / Token Lainnya</option>
-                        </select>
-                    </div>
+            <!-- Configuration & Timeframe Widget -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col gap-5">
+                <div>
+                    <h2 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Pilih Pair & Instrumen</h2>
+                    <select id="pairSelect" onchange="onPairChanged()" class="w-full bg-chartDark border border-chartBorder rounded-xl py-2.5 px-3 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer appearance-none">
+                        <option value="BTCUSD">Bitcoin (BTC/USD)</option>
+                        <option value="ETHUSD">Ethereum (ETH/USD)</option>
+                        <option value="EURUSD">EUR/USD (Forex Major)</option>
+                        <option value="NAS100">NAS100 (Nasdaq Index)</option>
+                    </select>
+                </div>
 
-                    <!-- Custom inputs (Shown only if CUSTOM selected) -->
-                    <div id="customPairFields" class="hidden grid grid-cols-2 gap-2 p-3 bg-chartDark/50 rounded-lg border border-chartBorder">
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 font-semibold">Binance Symbol (CORS):</label>
-                            <input type="text" id="customBinanceSymbol" placeholder="Contoh: SOLUSDT" class="w-full bg-chartDark border border-chartBorder rounded p-1.5 text-xs text-white uppercase focus:outline-none focus:border-chartAccent">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-gray-400 mb-1 font-semibold">TradingView Symbol:</label>
-                            <input type="text" id="customTVSymbol" placeholder="Contoh: BINANCE:SOLUSDT" class="w-full bg-chartDark border border-chartBorder rounded p-1.5 text-xs text-white uppercase focus:outline-none focus:border-chartAccent">
-                        </div>
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xs font-bold text-white uppercase tracking-wider">Multi-Timeframe Focus</h2>
+                        <span class="text-[10px] font-mono text-gray-500" id="selectedCount">Terpilih: 3 TF</span>
                     </div>
-
-                    <!-- Multi-TF Fetching & Config Selector -->
-                    <div class="bg-chartDark rounded-xl p-4 border border-chartBorder space-y-3">
-                        <div class="text-[11px] font-bold text-white uppercase tracking-wider flex items-center justify-between">
-                            <span>Pilih Timeframe Analisa</span>
-                            <span class="text-[10px] text-emerald-400 font-mono">Live Config</span>
+                    
+                    <div class="grid grid-cols-4 gap-2" id="tfSelectorContainer">
+                        <!-- Custom styled pill checkboxes -->
+                        <div onclick="toggleTf('chkD1')" id="pill-chkD1" class="cursor-pointer bg-chartDark border border-blue-500/40 text-blue-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                            <span class="font-bold">D1</span>
+                            <span class="text-[8px] opacity-60">Daily Bias</span>
+                            <input type="checkbox" id="chkD1" checked class="hidden">
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-x-2 gap-y-2.5 text-[11px]" id="tfSelectorContainer">
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkD1" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusD1" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> D1 (Bias)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkH4" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusH4" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> H4 (Trend)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkH1" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusH1" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> H1 (Intermediate)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkM30" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusM30" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> M30 (Momentum)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkM15" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusM15" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> M15 (Execution)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkM5" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusM5" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> M5 (Scalp)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkM3" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusM3" class="flex items-center gap-1.5"><i class="fa-regular fa-circle text-gray-500"></i> M3 (Fine scalp)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white select-none">
-                                <input type="checkbox" id="chkM1" checked class="rounded border-chartBorder text-chartAccent focus:ring-0 bg-chartDark w-3.5 h-3.5">
-                                <span id="statusM1" class="flex items-center gap-1.5 text-chartAccent font-semibold"><i class="fa-regular fa-circle text-chartAccent/50"></i> M1 (Micro)</span>
-                            </label>
+                        <div onclick="toggleTf('chkH4')" id="pill-chkH4" class="cursor-pointer bg-chartDark border border-blue-500/40 text-blue-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                            <span class="font-bold">H4</span>
+                            <span class="text-[8px] opacity-60">Structure</span>
+                            <input type="checkbox" id="chkH4" checked class="hidden">
                         </div>
-                        <p class="text-[9.5px] text-gray-500 italic">Hilangkan centang untuk mengabaikan TF tertentu saat analisa dijalankan.</p>
+                        <div onclick="toggleTf('chkH1')" id="pill-chkH1" class="cursor-pointer bg-chartDark border border-blue-500/40 text-blue-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                            <span class="font-bold">H1</span>
+                            <span class="text-[8px] opacity-60">Key Level</span>
+                            <input type="checkbox" id="chkH1" checked class="hidden">
+                        </div>
+                        <div onclick="toggleTf('chkM30')" id="pill-chkM30" class="cursor-pointer bg-chartDark border border-chartBorder text-gray-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500">
+                            <span class="font-bold">M30</span>
+                            <span class="text-[8px] opacity-60">OrderFlow</span>
+                            <input type="checkbox" id="chkM30" class="hidden">
+                        </div>
+                        <div onclick="toggleTf('chkM15')" id="pill-chkM15" class="cursor-pointer bg-chartDark border border-chartBorder text-gray-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500">
+                            <span class="font-bold">M15</span>
+                            <span class="text-[8px] opacity-60">Execution</span>
+                            <input type="checkbox" id="chkM15" class="hidden">
+                        </div>
+                        <div onclick="toggleTf('chkM5')" id="pill-chkM5" class="cursor-pointer bg-chartDark border border-chartBorder text-gray-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500">
+                            <span class="font-bold">M5</span>
+                            <span class="text-[8px] opacity-60">Scalp Entry</span>
+                            <input type="checkbox" id="chkM5" class="hidden">
+                        </div>
+                        <div onclick="toggleTf('chkM3')" id="pill-chkM3" class="cursor-pointer bg-chartDark border border-chartBorder text-gray-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500">
+                            <span class="font-bold">M3</span>
+                            <span class="text-[8px] opacity-60">Refinement</span>
+                            <input type="checkbox" id="chkM3" class="hidden">
+                        </div>
+                        <div onclick="toggleTf('chkM1')" id="pill-chkM1" class="cursor-pointer bg-chartDark border border-chartBorder text-gray-400 text-[11px] font-semibold py-2 px-1 rounded-xl text-center transition-all flex flex-col items-center justify-center gap-1 hover:border-blue-500">
+                            <span class="font-bold">M1</span>
+                            <span class="text-[8px] opacity-60">Precision</span>
+                            <input type="checkbox" id="chkM1" class="hidden">
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- ANALYZE BUTTON -->
-            <button onclick="startAutomatedAnalysis()" id="analyzeBtn" class="w-full bg-chartAccent hover:bg-chartAccent/90 hover:shadow-[0_0_15px_rgba(41,98,255,0.3)] text-white text-sm font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-chartAccent/30">
-                <i class="fa-solid fa-bolt"></i> Mulai Auto-Analisa Multi-TF
-            </button>
-
-        </section>
-
-        <!-- RIGHT PANEL (Interactive Chart & Report Panel) -->
-        <section class="lg:col-span-7 flex flex-col gap-6">
-            
-            <!-- LIVE CHART WORKSPACE -->
-            <div class="bg-chartCard border border-chartBorder rounded-xl p-4 shadow-lg h-[400px] flex flex-col">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-chart-line text-chartAccent"></i> Live Interactive Chart
+                
+                <!-- Action Button -->
+                <button onclick="startAutomatedAnalysis()" 
+                    class="relative overflow-hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest transition-all shadow-[0_4px_20px_rgba(37,99,235,0.3)] hover:shadow-[0_4px_25px_rgba(37,99,235,0.45)] active:scale-[0.98]">
+                    <span class="relative z-10 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i> Mulai Analisis Otomatis
                     </span>
-                    <span class="text-[10px] text-gray-400" id="chartDisplayName">Loading...</span>
-                </div>
-                <!-- Dynamic TradingView Container -->
-                <div id="tvChartContainer" class="w-full flex-grow rounded-lg overflow-hidden border border-chartBorder bg-chartDark">
-                    <!-- Widget will inject here -->
-                </div>
+                </button>
             </div>
-
-            <!-- ANALYSIS REPORT WORKSPACE -->
-            <div class="bg-chartCard border border-chartBorder rounded-xl p-6 flex-grow flex flex-col shadow-lg min-h-[350px]">
-                
-                <!-- Card Header -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-chartBorder pb-4 mb-5">
-                    <div>
-                        <h2 class="text-sm font-bold text-white tracking-wide flex items-center gap-2">
-                            <span class="inline-block w-2.5 h-2.5 bg-chartAccent rounded-full animate-pulse"></span>
-                            Terminal Hasil Analisa AI
-                        </h2>
-                        <p class="text-[11px] text-gray-400">Hasil komparasi data live multi-timeframe dengan aturan trading personal Anda</p>
-                    </div>
-                    
-                    <!-- Quick Actions -->
-                    <div class="flex items-center gap-2 w-full sm:w-auto self-end">
-                        <button onclick="copyReport()" class="bg-chartDark hover:bg-chartBorder border border-chartBorder text-gray-300 text-[11px] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                            <i class="fa-solid fa-copy"></i> Copy
-                        </button>
-                        <button onclick="speakReport()" class="bg-chartDark hover:bg-chartBorder border border-chartBorder text-gray-300 text-[11px] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                            <i class="fa-solid fa-volume-high"></i> Listen
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Dynamic Messaging Status -->
-                <div id="notificationBanner" class="hidden mb-4 p-3 rounded-lg text-xs flex items-center gap-2 border"></div>
-
-                <!-- STATE 1: Empty State -->
-                <div id="stateEmpty" class="flex-grow flex flex-col items-center justify-center text-center p-8">
-                    <div class="w-16 h-16 bg-chartBorder/30 rounded-full flex items-center justify-center text-gray-500 mb-4 border border-chartBorder">
-                        <i class="fa-solid fa-robot text-2xl"></i>
-                    </div>
-                    <h3 class="text-white font-semibold text-sm mb-1">Menunggu Perintah Analisa</h3>
-                    <p class="text-xs text-gray-500 max-w-sm">
-                        Simpan Gemini API Key Anda di bagian atas, pilih aset, lalu klik tombol <b>Mulai Auto-Analisa Multi-TF</b> untuk menarik data live dan menganalisanya secara otomatis.
-                    </p>
-                </div>
-
-                <!-- STATE 2: Loading State -->
-                <div id="stateLoading" class="hidden flex-grow flex flex-col items-center justify-center text-center p-8">
-                    <!-- Spinning AI Core -->
-                    <div class="relative w-24 h-24 mb-6">
-                        <div class="absolute inset-0 border-4 border-chartAccent/20 rounded-full"></div>
-                        <div class="absolute inset-0 border-4 border-chartAccent border-t-transparent rounded-full animate-spin"></div>
-                        <div class="absolute inset-4 bg-chartDark border border-chartBorder rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-microchip text-2xl text-chartAccent animate-pulse"></i>
-                        </div>
-                    </div>
-                    
-                    <h3 class="text-white font-bold text-sm mb-2">Sistem Sedang Memproses Pasar...</h3>
-                    <p class="text-xs text-gray-400 max-w-md mb-4" id="loadingStageText">Menarik data market live secara real-time...</p>
-                    
-                    <!-- Progress Subtasks -->
-                    <div class="space-y-2 text-left max-w-xs mx-auto text-xs text-gray-500">
-                        <div id="task1" class="flex items-center gap-2"><i class="fa-solid fa-circle-notch"></i> Memproses materi trading</div>
-                        <div id="task2" class="flex items-center gap-2"><i class="fa-solid fa-circle-notch"></i> Menghubungkan ke API live market</div>
-                        <div id="task3" class="flex items-center gap-2"><i class="fa-solid fa-circle-notch"></i> Mengeksekusi Gemini Multi-TF Engine</div>
-                    </div>
-                </div>
-
-                <!-- STATE 3: Report Content Display -->
-                <div id="stateReport" class="hidden flex-grow flex flex-col">
-                    <div id="reportBox" class="text-xs leading-relaxed text-gray-300 overflow-y-auto max-h-[500px] bg-chartDark/50 p-4 sm:p-5 rounded-xl border border-chartBorder prose prose-invert prose-xs max-w-none">
-                        <!-- Markdown text injected here -->
-                    </div>
-                </div>
-
-            </div>
-
         </section>
 
+        <!-- RIGHT PANEL (CHART & LAPORAN ANALISA) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            <!-- TradingView Container with visual border highlight -->
+            <div class="glass-panel border-l-2 border-l-blue-500 rounded-2xl p-4 shadow-xl h-[420px] transition-all hover:shadow-2xl relative">
+                <div class="absolute top-2.5 right-6 z-10 bg-chartDark/80 px-2.5 py-1 rounded-md border border-chartBorder flex items-center gap-2">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-[9px] font-mono uppercase text-emerald-400 font-semibold tracking-wider" id="chartLiveStatus">Live Feed</span>
+                </div>
+                <div id="tvChartContainer" class="w-full h-full rounded-xl overflow-hidden bg-chartDark"></div>
+            </div>
+
+            <!-- Report Output Card -->
+            <div class="glass-panel rounded-2xl shadow-xl flex flex-col min-h-[380px] overflow-hidden">
+                <!-- Report Header -->
+                <div class="px-5 py-4 border-b border-chartBorder/60 flex items-center justify-between bg-chartCard/40">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-yellow-500" id="reportStatusDot"></span>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider" id="reportTitleText">Hasil Analisis Terminal</h3>
+                    </div>
+                    <!-- Quick action utility buttons -->
+                    <div class="flex items-center gap-1.5" id="utilityActions" style="display: none;">
+                        <button onclick="copyToClipboard()" class="p-2 hover:bg-chartBorder rounded-lg text-gray-400 hover:text-white transition-colors text-xs" title="Salin Laporan">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                        <button onclick="readAloud()" class="p-2 hover:bg-chartBorder rounded-lg text-gray-400 hover:text-white transition-colors text-xs" title="Dengarkan Analisis">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <button onclick="downloadReportAsTxt()" class="p-2 hover:bg-chartBorder rounded-lg text-gray-400 hover:text-white transition-colors text-xs" title="Unduh TXT">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Report Content container -->
+                <div id="reportBox" class="p-6 flex-grow overflow-y-auto max-h-[400px] text-xs leading-relaxed prose prose-invert font-sans">
+                    <div class="flex flex-col items-center justify-center text-center py-20 gap-4">
+                        <div class="w-14 h-14 rounded-full bg-chartBorder/40 flex items-center justify-center text-gray-600">
+                            <i class="fa-solid fa-terminal text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-white font-medium mb-1">Terminal Siap Digunakan</p>
+                            <p class="text-gray-500 text-[11px] max-w-sm">Silakan pasang API Key, pilih instrumen & timeframe yang diinginkan, kemudian klik "Mulai Analisis Otomatis".</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="bg-chartCard border-t border-chartBorder py-4 px-4 text-center mt-6">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p class="text-[11px] text-gray-500">SMC AI-Trading Terminal &copy; 2026. Powered by Gemini API & Binance Live Market Data.</p>
-            <div class="flex items-center gap-4 text-xs text-gray-400">
-                <a href="#" onclick="showHelpModal()" class="hover:text-chartAccent transition-colors"><i class="fa-regular fa-circle-question"></i> Panduan Penggunaan</a>
-                <span>|</span>
-                <span class="text-[10px] text-emerald-500 flex items-center gap-1"><span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Safe Direct connection</span>
+    <footer class="glass-panel border-t border-chartBorder/60 py-3 px-6 mt-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-[10px] font-mono text-gray-500 gap-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <span>SYSTEM STATUS: OPERATIONAL</span>
             </div>
+            <div>SMC AI-Trading Terminal &copy; 2026. Made with Precision.</div>
         </div>
     </footer>
 
-    <!-- HELP MODAL -->
-    <div id="helpModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-chartCard border border-chartBorder rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
-            <button onclick="hideHelpModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-circle-question text-chartAccent"></i> Panduan SMC AI-Trading v2.0
-            </h3>
-            <div class="text-xs text-gray-300 space-y-3 leading-relaxed">
-                <p>Versi 2.0 ini bekerja secara 100% otomatis tanpa perlu mengunggah gambar screenshot lagi.</p>
-                <ol class="list-decimal list-inside space-y-2 pl-1">
-                    <li>Input **Gemini API Key** Anda di bar atas, lalu simpan.</li>
-                    <li>Sistem akan mendownload data OHLC lilin (*candles*) real-time dari market untuk 4 TF: **Daily (D1)**, **H4**, **H1**, dan **M15**.</li>
-                    <li>AI kemudian akan meraba struktur market (CHoCH, BOS, FVG, Liquidity sweeps) secara matematis berdasarkan data lilin tersebut.</li>
-                    <li>Jika Anda memilih **Custom**, Anda bebas memasukkan kode aset Binance spot apa saja untuk dianalisa (misal: *SOLUSDT*, *ADAUSDT*).</li>
-                </ol>
-                <p class="bg-chartAccent/10 text-chartAccent p-2 rounded border border-chartAccent/20">
-                    <strong>Catatan Transparansi:</strong> Untuk indeks tradisional seperti NAS100 & US30, karena keterbatasan CORS API publik, kami menggunakan pergerakan harga aset crypto terkemuka (BTC) yang diselaraskan dengan kisaran skala indeks tersebut sebagai proksi pola pergerakan pasarnya. Ini memberikan akurasi analisis pola struktur yang tetap realistik.
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Presets of Materials (Knowledge Base)
-        const PRESETS = {
-            smc: `KONSEPAL DASAR SMART MONEY CONCEPTS (SMC) UNTUK ANALISA:
-
-1. MARKET STRUCTURE SHIFT (MSS) / BREAK OF STRUCTURE (BOS):
-   - BOS (Break of Structure): Penerusan tren (bullish terus naik menembus high sebelumnya, atau bearish terus turun menembus low sebelumnya). Harus ditutup dengan body candle di TF yang dianalisa.
-   - MSS (Market Structure Shift) / CHOCH: Perubahan arah tren awal. Terjadi saat swing high/low terakhir yang menghasilkan titik terekstrim berhasil ditembus oleh candle penutupan.
-
-2. FAIR VALUE GAP (FVG) / IMBALANCE:
-   - FVG terbentuk dari struktur 3 candle berturut-turut.
-   - Area gap/kosong antara Low Candle ke-1 dengan High Candle ke-3 (untuk bearish gap), atau High Candle ke-1 dengan Low Candle ke-3 (untuk bullish gap).
-   - Area ini bertindak sebagai magnet harga untuk rebalance market.
-
-3. LIQUIDITY POOLS (BSL & SSL):
-   - Buy-Side Liquidity (BSL): Area likuiditas buy stop di atas swing high sebelumnya, double top, atau equal highs (EQH).
-   - Sell-Side Liquidity (SSL): Area likuiditas sell stop di bawah swing low sebelumnya, double bottom, atau equal lows (EQL).
-   - Strategi entry mencari Liquidity Sweep (harga mengambil likuiditas lalu berbalik arah dengan momentum kuat).
-
-4. ORDER BLOCK (OB):
-   - Candle berlawanan arah terakhir sebelum pergerakan impulsif naik/turun yang memecahkan struktur pasar (BOS/MSS).
-   - Valid jika meninggalkan FVG setelah pembentukannya.`,
-
-            ict: `ICT CORE CONCEPTS & TRADING RULES:
-
-1. THE POWER OF 3 (PO3):
-   - Fase pergerakan market harian: Accumulation (Akumulasi), Manipulation (Manipulasi/Judas Swing), Distribution (Distribusi/Perjalanan Tren).
-   - Bullish Day PO3: Open -> Turun ke bawah open (Manipulasi/buat Low) -> Rally impulsif naik (Distribusi/buat High) -> Close di dekat high.
-   - Bearish Day PO3: Open -> Naik ke atas open (Manipulasi/buat High) -> Drop impulsif turun (Distribusi/buat Low) -> Close di dekat low.
-
-2. LIQUIDITY SWEEP & REVERSAL:
-   - Cari area "Old High" atau "Old Low".
-   - Tunggu harga menembus level tersebut secara sekilas (Stop Hunt) lalu langsung ditarik kembali ke dalam range (rejection).
-   - Konfirmasi entry ideal di lower timeframe menggunakan MSS + FVG.
-
-3. MARKET BIAS:
-   - Tentukan Daily Bias menggunakan timeframe Daily (D1) atau H4.
-   - Cari Order Flow institusional. Jika bias bullish, fokus hanya mencari setup buy di diskon area (di bawah level 50% Fibonacci retracement).`,
-            clean: ""
-        };
-
-        // UI Pairs Configuration & Mappings
-        const ASSETS = {
-            BTCUSD: { tv: "BINANCE:BTCUSDT", binance: "BTCUSDT", label: "Bitcoin / USD" },
-            ETHUSD: { tv: "BINANCE:ETHUSDT", binance: "ETHUSDT", label: "Ethereum / USD" },
-            EURUSD: { tv: "FX:EURUSD", binance: "EURUSDT", label: "EUR / USD" },
-            GBPUSD: { tv: "FX:GBPUSD", binance: "GBPUSDT", label: "GBP / USD" },
-            AUDUSD: { tv: "FX:AUDUSD", binance: "AUDUSDT", label: "AUD / USD" },
-            XAUUSD: { tv: "OANDA:XAUUSD", binance: "PAXGUSDT", label: "Gold / USD" },
-            NAS100: { tv: "NASDAQ:NDX", binance: "BTCUSDT", label: "NAS100 (Index)", scale: 0.28 },
-            US30: { tv: "DJ:DJI", binance: "BTCUSDT", label: "US30 (Index)", scale: 0.62 }
-        };
-
-        // Timeframes mapping config (ID, Checkbox element, Binance Interval, UI Label)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
+        let loadedFiles = [];
         const TIMEFRAMES = {
-            'D1': { id: 'D1', chkId: 'chkD1', interval: '1d', label: 'D1 (Bias)' },
-            'H4': { id: 'H4', chkId: 'chkH4', interval: '4h', label: 'H4 (Trend)' },
-            'H1': { id: 'H1', chkId: 'chkH1', interval: '1h', label: 'H1 (Intermediate)' },
-            'M30': { id: 'M30', chkId: 'chkM30', interval: '30m', label: 'M30 (Momentum)' },
-            'M15': { id: 'M15', chkId: 'chkM15', interval: '15m', label: 'M15 (Execution)' },
-            'M5': { id: 'M5', chkId: 'chkM5', interval: '5m', label: 'M5 (Scalp)' },
-            'M3': { id: 'M3', chkId: 'chkM3', interval: '3m', label: 'M3 (Fine scalp)' },
-            'M1': { id: 'M1', chkId: 'chkM1', interval: '1m', label: 'M1 (Micro Scalping)' }
+            'D1': '1d', 'H4': '4h', 'H1': '1h', 'M30': '30m', 'M15': '15m', 'M5': '5m', 'M3': '3m', 'M1': '1m'
         };
 
-        let activeApiKey = "";
-        let tradingviewWidget = null;
-        let analysisRawText = "";
-
-        window.onload = function() {
-            // Load saved API key
-            const savedKey = localStorage.getItem("gemini_trading_api_key");
-            if (savedKey) {
-                document.getElementById("apiKeyInput").value = savedKey;
-                activeApiKey = savedKey;
-                showNotification("API Key otomatis termuat dari lokal sistem.", "success");
+        // UI Toggles & Visual Updates
+        function toggleTf(checkboxId) {
+            const cb = document.getElementById(checkboxId);
+            cb.checked = !cb.checked;
+            
+            const pill = document.getElementById('pill-' + checkboxId);
+            if (cb.checked) {
+                pill.classList.remove('border-chartBorder', 'text-gray-400');
+                pill.classList.add('border-blue-500/40', 'text-blue-400', 'shadow-[0_0_10px_rgba(59,130,246,0.1)]');
+            } else {
+                pill.classList.remove('border-blue-500/40', 'text-blue-400', 'shadow-[0_0_10px_rgba(59,130,246,0.1)]');
+                pill.classList.add('border-chartBorder', 'text-gray-400');
             }
+            updateSelectedTfCount();
+        }
 
-            // Load default preset (SMC Basics)
-            loadPreset('smc');
+        function updateSelectedTfCount() {
+            const count = document.querySelectorAll('#tfSelectorContainer input:checked').length;
+            document.getElementById('selectedCount').innerText = `Terpilih: ${count} TF`;
+        }
 
-            // Setup character counters
-            const ta = document.getElementById("tradingRulesText");
-            ta.addEventListener('input', updateCharCount);
-            updateCharCount();
+        // Load Default Preset SMC Rules
+        function loadDefaultSMCRules() {
+            const preset = `### SMART MONEY CONCEPTS (SMC) & ICT BASE RULES:
+1. DAILY BIAS:
+   - Selalu tentukan arah Daily Bias terlebih dahulu (Bullish / Bearish / Sideways).
+   - Cari Liquidity Pool terdekat (BSL / SSL) di chart Daily untuk target pergerakan harga.
 
-            // Attach live state change checking on TF selection checkboxes
-            Object.values(TIMEFRAMES).forEach(tf => {
-                document.getElementById(tf.chkId).addEventListener('change', resetFetchStatus);
-            });
+2. STRUCTURE MARK-UP:
+   - Cari Break of Structure (BOS) untuk kelanjutan trend.
+   - Cari Market Structure Shift (MSS) atau Change of Character (CHoCH) untuk tanda pembalikan tren.
 
-            // Load default chart
-            onPairChanged();
-        };
+3. VALUE AREAS & ENTRY:
+   - Identifikasi Order Block (OB) yang masih fresh (belum termitigasi) di area premium/discount.
+   - Cari Fair Value Gap (FVG) sebagai area penarikan harga kembali.
+   - Entry hanya jika terjadi Liquidity Sweep sebelum reaksi harga.`;
+            
+            document.getElementById('tradingRulesText').value = preset;
+            showNotification("SMC rules preset berhasil dimuat!", "success");
+        }
 
-        function toggleApiKeyVisibility() {
+        // File Handler
+        async function handleFiles(files) {
+            const list = document.getElementById('fileList');
+            for (let file of files) {
+                // Check if already loaded
+                if (loadedFiles.some(f => f.name === file.name)) continue;
+
+                const fileObj = { name: file.name, content: "" };
+                list.innerHTML += `
+                    <div id="file-${file.name.replace(/\s+/g, '')}" class="flex items-center justify-between bg-chartDark/80 px-3 py-1.5 rounded-lg border border-chartBorder text-[10px] animate-fadeIn">
+                        <span class="text-blue-400 truncate max-w-[80%]"><i class="fa-solid fa-file-pdf mr-1 text-red-400"></i> ${file.name}</span>
+                        <button onclick="removeFile('${file.name}')" class="text-gray-500 hover:text-red-400 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
+
+                if (file.type === "application/pdf") {
+                    fileObj.content = await extractPdfText(file);
+                } else {
+                    fileObj.content = await file.text();
+                }
+                loadedFiles.push(fileObj);
+            }
+            showNotification(`${files.length} berkas berhasil diunggah!`, "success");
+        }
+
+        function removeFile(filename) {
+            loadedFiles = loadedFiles.filter(f => f.name !== filename);
+            const el = document.getElementById(`file-${filename.replace(/\s+/g, '')}`);
+            if (el) el.remove();
+            showNotification("Berkas dihapus", "info");
+        }
+
+        async function extractPdfText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(" ");
+            }
+            return text;
+        }
+
+        // Toggle API Key Visibility
+        function togglePasswordVisibility() {
             const input = document.getElementById("apiKeyInput");
-            const eyeIcon = document.getElementById("apiKeyEyeIcon");
+            const icon = document.getElementById("togglePassIcon");
             if (input.type === "password") {
                 input.type = "text";
-                eyeIcon.classList.remove("fa-eye");
-                eyeIcon.classList.add("fa-eye-slash");
+                icon.className = "fa-solid fa-eye text-xs";
             } else {
                 input.type = "password";
-                eyeIcon.classList.remove("fa-eye-slash");
-                eyeIcon.classList.add("fa-eye");
-            }
-        }
-
-        function saveApiKey() {
-            const key = document.getElementById("apiKeyInput").value.trim();
-            if (!key) {
-                showNotification("API Key kosong. Silakan masukkan key yang valid.", "error");
-                return;
-            }
-            localStorage.setItem("gemini_trading_api_key", key);
-            activeApiKey = key;
-            showNotification("Gemini API Key tersimpan dengan sukses!", "success");
-        }
-
-        function loadPreset(presetName) {
-            const text = PRESETS[presetName] || "";
-            document.getElementById("tradingRulesText").value = text;
-            updateCharCount();
-        }
-
-        function updateCharCount() {
-            const text = document.getElementById("tradingRulesText").value;
-            document.getElementById("charCount").innerText = `${text.length} karakter`;
-        }
-
-        function showNotification(msg, type = "info") {
-            const banner = document.getElementById("notificationBanner");
-            banner.classList.remove("hidden", "bg-emerald-500/10", "border-emerald-500/30", "text-emerald-400", "bg-rose-500/10", "border-rose-500/30", "text-rose-400", "bg-blue-500/10", "border-blue-500/30", "text-blue-400");
-            
-            if (type === "success") {
-                banner.classList.add("bg-emerald-500/10", "border-emerald-500/30", "text-emerald-400");
-                banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${msg}</span>`;
-            } else if (type === "error") {
-                banner.classList.add("bg-rose-500/10", "border-rose-500/30", "text-rose-400");
-                banner.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> <span>${msg}</span>`;
-            } else {
-                banner.classList.add("bg-blue-500/10", "border-blue-500/30", "text-blue-400");
-                banner.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${msg}</span>`;
-            }
-            
-            banner.classList.remove("hidden");
-            setTimeout(() => {
-                banner.classList.add("hidden");
-            }, 6000);
-        }
-
-        // Triggered when user changes the chosen Asset
-        function onPairChanged() {
-            const pair = document.getElementById("pairSelect").value;
-            const customFields = document.getElementById("customPairFields");
-            
-            let tvSymbol = "";
-            let displayName = "";
-
-            if (pair === "CUSTOM") {
-                customFields.classList.remove("hidden");
-                const customTV = document.getElementById("customTVSymbol").value.trim().toUpperCase();
-                tvSymbol = customTV || "BINANCE:BTCUSDT";
-                displayName = "Custom Asset";
-            } else {
-                customFields.classList.add("hidden");
-                const cfg = ASSETS[pair];
-                tvSymbol = cfg.tv;
-                displayName = cfg.label;
-            }
-
-            document.getElementById("chartDisplayName").innerText = displayName;
-
-            // Rebuild TradingView Widget
-            renderTradingViewWidget(tvSymbol);
-            resetFetchStatus();
-        }
-
-        function renderTradingViewWidget(symbol) {
-            // Empty container
-            document.getElementById("tvChartContainer").innerHTML = `<div id="tradingview_chart_frame" class="w-full h-full"></div>`;
-            
-            try {
-                tradingviewWidget = new TradingView.widget({
-                    "autosize": true,
-                    "symbol": symbol,
-                    "interval": "D",
-                    "timezone": "Etc/UTC",
-                    "theme": "dark",
-                    "style": "1",
-                    "locale": "en",
-                    "enable_publishing": false,
-                    "hide_side_toolbar": false,
-                    "allow_symbol_change": true,
-                    "container_id": "tradingview_chart_frame"
-                });
-            } catch (err) {
-                console.error("Gagal memuat TradingView widget: ", err);
-            }
-        }
-
-        function resetFetchStatus() {
-            Object.values(TIMEFRAMES).forEach(tf => {
-                const el = document.getElementById(`status${tf.id}`);
-                const isChecked = document.getElementById(tf.chkId).checked;
-                
-                if (isChecked) {
-                    el.className = "flex items-center gap-1.5 text-gray-300 font-normal";
-                    el.innerHTML = `<i class="fa-regular fa-circle text-gray-500"></i> ${tf.label}`;
-                } else {
-                    el.className = "flex items-center gap-1.5 text-gray-500 line-through decoration-chartBorder font-light";
-                    el.innerHTML = `<i class="fa-regular fa-circle-xmark text-gray-600"></i> ${tf.id} (Disabled)`;
-                }
-            });
-        }
-
-        // Direct, Keyless, CORS-enabled fetch of crypto and currency proxies
-        async function fetchBinanceKlines(symbol, interval, limit = 40) {
-            const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP Error Status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                // Map to clean readable structure
-                return data.map(d => ({
-                    time: new Date(d[0]).toISOString().replace('T', ' ').substring(0, 16),
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4]),
-                    volume: parseFloat(d[5]),
-                    direction: parseFloat(d[4]) >= parseFloat(d[1]) ? "BULLISH" : "BEARISH"
-                }));
-            } catch (err) {
-                throw new Error(`Failed fetching klines for ${symbol} on ${interval}: ${err.message}`);
-            }
-        }
-
-        function updateTFStatus(tfId, state, errorMsg = "") {
-            const el = document.getElementById(`status${tfId}`);
-            const labelText = TIMEFRAMES[tfId].label;
-            
-            if (state === "loading") {
-                el.className = "flex items-center gap-1.5 text-chartAccent font-semibold";
-                el.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-chartAccent"></i> ${labelText}`;
-            } else if (state === "success") {
-                el.className = "flex items-center gap-1.5 text-emerald-400 font-semibold";
-                el.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${labelText}`;
-            } else {
-                el.className = "flex items-center gap-1.5 text-chartRed font-semibold";
-                el.innerHTML = `<i class="fa-solid fa-circle-exclamation text-chartRed animate-pulse"></i> ${tfId} Error`;
-            }
-        }
-
-        async function startAutomatedAnalysis() {
-            if (!activeApiKey) {
-                showNotification("Tolong simpan Gemini API Key Anda terlebih dahulu di bagian atas halaman!", "error");
-                document.getElementById("apiKeyInput").focus();
-                return;
-            }
-
-            const tradingRules = document.getElementById("tradingRulesText").value.trim();
-            if (!tradingRules) {
-                showNotification("Materi / Rules Trading Anda kosong. Silakan tambahkan landasan materi terlebih dahulu.", "error");
-                return;
-            }
-
-            const selectedTFs = Object.values(TIMEFRAMES).filter(tf => document.getElementById(tf.chkId).checked);
-            if (selectedTFs.length === 0) {
-                showNotification("Silakan centang minimal satu timeframe untuk dianalisa!", "error");
-                return;
-            }
-
-            const pair = document.getElementById("pairSelect").value;
-            let binanceSymbol = "";
-            let label = "";
-            let scaleFactor = 1.0;
-
-            if (pair === "CUSTOM") {
-                binanceSymbol = document.getElementById("customBinanceSymbol").value.trim().toUpperCase();
-                label = "Custom Token (" + binanceSymbol + ")";
-                if (!binanceSymbol) {
-                    showNotification("Silakan masukkan Binance Symbol terlebih dahulu untuk opsi Custom!", "error");
-                    return;
-                }
-            } else {
-                const cfg = ASSETS[pair];
-                binanceSymbol = cfg.binance;
-                label = cfg.label;
-                if (cfg.scale) {
-                    scaleFactor = cfg.scale;
-                }
-            }
-
-            // Switch to Loading UI
-            document.getElementById("stateEmpty").classList.add("hidden");
-            document.getElementById("stateReport").classList.add("hidden");
-            document.getElementById("stateLoading").classList.remove("hidden");
-
-            const stageText = document.getElementById("loadingStageText");
-            const t1 = document.getElementById("task1");
-            const t2 = document.getElementById("task2");
-            const t3 = document.getElementById("task3");
-
-            t1.className = "flex items-center gap-2 text-gray-500";
-            t1.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-chartAccent"></i> Memproses materi trading`;
-            t2.className = "flex items-center gap-2 text-gray-500";
-            t2.innerHTML = `<i class="fa-solid fa-circle-notch"></i> Menghubungkan ke API live market`;
-            t3.className = "flex items-center gap-2 text-gray-500";
-            t3.innerHTML = `<i class="fa-solid fa-circle-notch"></i> Mengeksekusi Gemini Multi-TF Engine`;
-
-            // STEP 1: Process rules
-            await delay(600);
-            t1.className = "flex items-center gap-2 text-emerald-400 font-semibold";
-            t1.innerHTML = `<i class="fa-solid fa-circle-check"></i> Materi trading siap (${tradingRules.length} karakter)`;
-
-            // STEP 2: Fetch Live Candle Data for all SELECTED TFs in parallel
-            t2.className = "flex items-center gap-2 text-white font-semibold";
-            t2.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-chartAccent"></i> Menghubungkan ke API live market`;
-            stageText.innerText = `Mengunduh lilin historical real-time untuk ${label} dari Binance Spot...`;
-
-            resetFetchStatus();
-
-            let candleData = {};
-
-            try {
-                const fetchPromises = selectedTFs.map(async (tf) => {
-                    updateTFStatus(tf.id, 'loading');
-                    const klines = await fetchBinanceKlines(binanceSymbol, tf.interval, 30);
-                    updateTFStatus(tf.id, 'success');
-                    candleData[tf.id] = klines;
-                });
-
-                await Promise.all(fetchPromises);
-
-                t2.className = "flex items-center gap-2 text-emerald-400 font-semibold";
-                t2.innerHTML = `<i class="fa-solid fa-circle-check"></i> Data ${selectedTFs.length} Timeframe berhasil diunduh`;
-
-                // Optionally scale prices for indices proxy (NAS100 / US30)
-                if (scaleFactor !== 1.0) {
-                    const scaleFn = c => {
-                        c.open = Math.round(c.open * scaleFactor * 100) / 100;
-                        c.high = Math.round(c.high * scaleFactor * 100) / 100;
-                        c.low = Math.round(c.low * scaleFactor * 100) / 100;
-                        c.close = Math.round(c.close * scaleFactor * 100) / 100;
-                    };
-                    Object.keys(candleData).forEach(tfKey => {
-                        candleData[tfKey].forEach(scaleFn);
-                    });
-                }
-
-            } catch (err) {
-                console.error(err);
-                t2.className = "flex items-center gap-2 text-chartRed font-semibold";
-                t2.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Gagal mengunduh data live market`;
-                showNotification(`Gagal mengambil data market: ${err.message}`, "error");
-                
-                document.getElementById("stateLoading").classList.add("hidden");
-                document.getElementById("stateEmpty").classList.remove("hidden");
-                return;
-            }
-
-            // STEP 3: Package Data and execute Gemini AI Analysis
-            t3.className = "flex items-center gap-2 text-white font-semibold";
-            t3.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-chartAccent"></i> Mengeksekusi Gemini Multi-TF Engine`;
-            stageText.innerText = "Mengompilasi data lilin & meluncurkan core reasoning analysis...";
-
-            // Create highly structured data payload based dynamically on active TFs
-            let marketDataString = `BERIKUT DATA HISTORICAL CANDLESTICK REAL-TIME UNTUK ASSET: ${label}\n\n`;
-            
-            selectedTFs.forEach(tf => {
-                const list = candleData[tf.id];
-                marketDataString += `### TIMEFRAME: ${tf.id} (${tf.label} - 25 candle terakhir, kronologis terlama ke terbaru) ###\n`;
-                list.slice(-25).forEach(c => {
-                    marketDataString += `[${c.time}] O: ${c.open} | H: ${c.high} | L: ${c.low} | C: ${c.close} | Vol: ${c.volume} | Dir: ${c.direction}\n`;
-                });
-                marketDataString += `\n`;
-            });
-
-            // Detailed multi-TF system instructions
-            const systemPrompt = `Kamu adalah AI Quantitative Technical Analyst yang mahir dalam mengurai data numerik candlestick menjadi Market Structure yang komprehensif mengandalkan asas Smart Money Concepts (SMC) dan Inner Circle Trader (ICT).
-
-Tugas Utama Kamu:
-1. Baca dan resapi aturan trading di bawah kolom "KNOWLEDGE BASE" sebagai satu-satunya parameter kebenaran analisamu.
-2. Analisalah pola deret harga Open, High, Low, dan Close pada timeframe yang disediakan (${selectedTFs.map(t => t.id).join(', ')}) secara logis (Top-Down Analysis):
-   - Jika tersedia, gunakan timeframe yang lebih besar (seperti D1 atau H4) untuk melacak bias struktur pasar global, arah utama, dan swing High/Low terekstrim.
-   - Gunakan timeframe menengah (H1 atau M15) untuk mendeteksi area Order Block, Fair Value Gap (FVG), atau letak BOS/MSS (CHoCH) terakhir.
-   - Jika M1 terpilih, manfaatkan data detail M1 ini untuk scalping super presisi, mencari konfirmasi reaksi harga (rejection), liquidity sweeps (stop hunts) pada level-level penting, atau formasi entry agresif yang langsung merespons swing structures.
-3. Buat analisis komparatif dalam bahasa Indonesia bergaya profesional, lugas, santai, dan tidak bertele-tele. Berikan kesimpulan trading setup aksi yang masuk akal.
-
-KNOWLEDGE BASE (PEDOMAN TRADING KAMU):
----
-${tradingRules}
----`;
-
-            const userPrompt = `Lakukan Multi-Timeframe (Multi-TF) top-down analysis berdasarkan data market mentah berikut. Cari korelasi logis antar timeframe yang disediakan (${selectedTFs.map(t => t.id).join(', ')}) untuk menghasilkan rekomendasi setup trading.
-
-${marketDataString}
-
-Laporan analisis wajib tersusun rapi dalam format Markdown dengan poin-poin berikut:
-- **MARKET STRUCTURE SURVEY (Timeframes: ${selectedTFs.map(t => t.id).join(', ')})**: Jabarkan bias arah trend di tiap timeframe serta letak area BOS/MSS (CHoCH) terakhir yang terdeteksi dari data harga tersebut.
-- **LIQUIDITY ANALYSIS**: Deteksi area swing High/Low mana saja di data tersebut yang berpotensi menjadi Sell-Side Liquidity (SSL) atau Buy-Side Liquidity (BSL) atau yang baru saja di-sweep (sapu bersih).
-- **ZONES OF INTEREST (FVG / OB / SCALPING TRIGGER)**: Sebutkan koordinat harga spesifik yang memiliki Fair Value Gap (Imbalance) segar atau Order Block valid di lower timeframe (H1, M15, atau area M1 yang sangat cepat) sebagai titik tunggu koreksi/entry.
-- **EXECUTIVE ACTION SUMMARY (TRADING SETUP)**: Berikan skenario aksi konkret (Buy/Sell limit atau instan, target Take Profit (TP), dan batas Stop Loss (SL) yang aman berdasarkan data struktur lilin yang ada).`;
-
-            try {
-                // Fetch Gemini API with exponential backoff
-                const responseText = await callGeminiAPI(systemPrompt, userPrompt);
-                
-                analysisRawText = responseText;
-
-                // Format Report
-                document.getElementById("reportBox").innerHTML = marked.parse(responseText);
-
-                t3.className = "flex items-center gap-2 text-emerald-400 font-semibold";
-                t3.innerHTML = `<i class="fa-solid fa-circle-check"></i> Analisa selesai dirumuskan!`;
-                stageText.innerText = "Selesai!";
-                await delay(400);
-
-                // Show Report Screen
-                document.getElementById("stateLoading").classList.add("hidden");
-                document.getElementById("stateReport").classList.remove("hidden");
-                showNotification("Sistem berhasil merumuskan top-down analysis secara otomatis!", "success");
-
-            } catch (err) {
-                console.error(err);
-                t3.className = "flex items-center gap-2 text-chartRed font-semibold";
-                t3.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Gemini AI gagal merespon`;
-                showNotification(`Gagal merumuskan analisa: ${err.message}`, "error");
-
-                document.getElementById("stateLoading").classList.add("hidden");
-                document.getElementById("stateEmpty").classList.remove("hidden");
+                icon.className = "fa-solid fa-eye-slash text-xs";
             }
         }
 
         async function callGeminiAPI(systemPrompt, userPrompt) {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeApiKey}`;
+            const apiKey = document.getElementById("apiKeyInput").value;
+            const model = document.getElementById("modelSelect").value;
             
-            const payload = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [{ text: userPrompt }]
-                    }
-                ],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                }
-            };
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                })
+            });
 
-            let delayMs = 1000;
-            const maxRetries = 3;
-
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        const errBody = await response.json();
-                        throw new Error(errBody?.error?.message || `HTTP status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const textResult = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (!textResult) {
-                        throw new Error("Respon kosong atau struktur data API tidak cocok.");
-                    }
-
-                    return textResult;
-
-                } catch (error) {
-                    if (attempt === maxRetries) {
-                        throw error;
-                    }
-                    console.warn(`Upaya ke-${attempt} gagal, mencoba ulang dalam ${delayMs}ms...`);
-                    await delay(delayMs);
-                    delayMs *= 2; // exponential backoff
-                }
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData?.error?.message || `HTTP ${response.status}`);
             }
+
+            const data = await response.json();
+            return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, AI tidak mengembalikan output analisis.";
         }
 
-        function delay(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        function copyReport() {
-            if (!analysisRawText) {
-                showNotification("Tidak ada laporan analisa yang bisa disalin.", "error");
+        // Main Orchestrator of Auto-Analysis
+        async function startAutomatedAnalysis() {
+            const apiKey = document.getElementById("apiKeyInput").value;
+            if(!apiKey) {
+                showNotification("Harap masukkan API Key Gemini Anda!", "error");
                 return;
             }
             
-            // Temporary clipboard text copy
-            const el = document.createElement('textarea');
-            el.value = analysisRawText;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            
-            showNotification("Laporan berhasil disalin ke clipboard!", "success");
-        }
+            const selectedTFs = [];
+            document.querySelectorAll('#tfSelectorContainer input:checked').forEach(el => {
+                const tfKey = el.id.replace('chk', '');
+                selectedTFs.push(tfKey);
+            });
 
-        function speakReport() {
-            if (!analysisRawText) {
-                showNotification("Tidak ada teks laporan untuk didengarkan.", "error");
+            if (selectedTFs.length === 0) {
+                showNotification("Silakan centang minimal 1 Timeframe!", "error");
                 return;
             }
-            
-            window.speechSynthesis.cancel();
-            
-            // Clean markdown for smoother Speech Synthesis reads
-            const cleanText = analysisRawText
-                .replace(/[\*\#\_]/g, "") 
-                .replace(/- /g, ", ");    
 
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            
-            // Try to set native Indonesian Voice
-            const voices = window.speechSynthesis.getVoices();
-            const idVoice = voices.find(v => v.lang.includes("id-ID") || v.lang.includes("ID"));
-            if (idVoice) {
-                utterance.voice = idVoice;
+            // Build manual rules combined with PDF rules
+            let manualRules = document.getElementById("tradingRulesText").value;
+            let documentRules = loadedFiles.map(f => f.content).join("\n");
+            const finalRules = `${manualRules}\n\n### ATURAN REKONSILIASI KNOWLEDGE DARI DOKUMEN:\n${documentRules}`;
+
+            // Visual Processing State
+            setAnalysisState("processing");
+
+            const selectedPair = document.getElementById("pairSelect").value;
+            const modelName = document.getElementById("modelSelect").value;
+
+            const systemPrompt = `Kamu adalah Asisten Analis Trading Pro berlisensi institusi dengan spesialisasi Smart Money Concepts (SMC) dan Inner Circle Trader (ICT).
+Tugas utamanya adalah memberikan analisa top-down objektif, realitis, dan terukur berdasarkan dokumen / rules yang diberikan pengguna.
+
+BERIKUT ADALAH MANUAL RULES & KNOWLEDGE BASE WAJIB:
+${finalRules}
+
+FORMAT OUTPUT ANALISA (Gunakan format markdown yang bersih dan rapi):
+1. **Ringkasan Bias Tren (Top-Down)**: Bandingkan trend antar timeframe yang dipilih.
+2. **Kondisi Liquidity (BSL / SSL)**: Jelaskan letak liquidity pool terdekat.
+3. **Validasi Setup SMC**: Cari Market Structure Shift (MSS/CHoCH) dan Fair Value Gap (FVG).
+4. **Trading Plan Rekomendasi**: Tentukan level Entry, Stop Loss (SL), dan Take Profit (TP) secara logis.`;
+
+            const userPrompt = `Lakukan analisis teknikal komprehensif sekarang untuk instrumen ${selectedPair} menggunakan kombinasi data timeframe: ${selectedTFs.join(', ')}.
+Gunakan seluruh acuan parameter SMC yang tertera di knowledge base saya untuk memastikan keakuratannya.`;
+
+            try {
+                const result = await callGeminiAPI(systemPrompt, userPrompt);
+                
+                // Success Rendering
+                document.getElementById("reportBox").innerHTML = marked.parse(result);
+                setAnalysisState("completed");
+                showNotification("Analisis Selesai!", "success");
+            } catch(e) {
+                console.error(e);
+                let fallbackMsg = ``;
+                if(e.message.includes("Model not found") || e.message.includes("404")) {
+                    fallbackMsg = `<div class="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+                        <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Model ${modelName} Tidak Tersedia</p>
+                        <p class="text-[10px] leading-normal mb-3">Model ini belum diaktifkan di kunci API Anda atau belum didukung oleh Google di region Anda. Silakan ganti model ke <strong>Gemini 1.5 Flash (Stabil)</strong> pada dropdown di header, lalu klik analisa kembali.</p>
+                    </div>`;
+                } else {
+                    fallbackMsg = `<div class="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+                        <p class="font-bold mb-1"><i class="fa-solid fa-circle-exclamation"></i> Terjadi Kesalahan</p>
+                        <p class="text-[10px] font-mono">${e.message}</p>
+                    </div>`;
+                }
+                document.getElementById("reportBox").innerHTML = fallbackMsg;
+                setAnalysisState("error");
             }
+        }
+
+        function setAnalysisState(state) {
+            const dot = document.getElementById("reportStatusDot");
+            const title = document.getElementById("reportTitleText");
+            const container = document.getElementById("reportBox");
+            const utilities = document.getElementById("utilityActions");
+
+            if (state === "processing") {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping";
+                title.innerText = "SMC ENGINE: MENGANALISIS MARKET...";
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center py-20 gap-4">
+                        <div class="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i class="fa-solid fa-circle-notch animate-spin text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-white font-medium mb-1">Membaca Data Multi-Timeframe...</p>
+                            <p class="text-gray-500 text-[10px] font-mono">GEMINI ENGINE SEDANG MENGOLAH STRUKTUR PASAR & KNOWLEDGE BASE</p>
+                        </div>
+                    </div>`;
+                utilities.style.display = "none";
+            } else if (state === "completed") {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                title.innerText = "SMC ENGINE: REKONSILIASI ANALISIS BERHASIL";
+                utilities.style.display = "flex";
+            } else if (state === "error") {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+                title.innerText = "SMC ENGINE: ANALISIS GAGAL";
+                utilities.style.display = "none";
+            }
+        }
+
+        // UI Notification System
+        function showNotification(text, type) {
+            const existing = document.getElementById("toast-notification");
+            if (existing) existing.remove();
+
+            const toast = document.createElement("div");
+            toast.id = "toast-notification";
             
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-            showNotification("AI sedang membacakan hasil analisa pasar.", "success");
+            let bgClass = "bg-blue-600/90 border-blue-500";
+            let icon = '<i class="fa-solid fa-circle-info mr-2"></i>';
+            if (type === "success") {
+                bgClass = "bg-emerald-600/95 border-emerald-500";
+                icon = '<i class="fa-solid fa-circle-check mr-2"></i>';
+            } else if (type === "error") {
+                bgClass = "bg-red-600/95 border-red-500";
+                icon = '<i class="fa-solid fa-circle-exclamation mr-2"></i>';
+            }
+
+            toast.className = `fixed bottom-6 right-6 ${bgClass} border text-white font-semibold text-xs px-4 py-3 rounded-xl shadow-2xl backdrop-blur-sm z-50 flex items-center animate-fadeIn`;
+            toast.innerHTML = `${icon} ${text}`;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        function showHelpModal() {
-            document.getElementById("helpModal").classList.remove("hidden");
+        // Local Storage Saved API Key Manager
+        function saveApiKey() {
+            const key = document.getElementById("apiKeyInput").value;
+            localStorage.setItem("api_key", key);
+            updateConnectionStatus();
+            showNotification("API Key Berhasil Disimpan Lokal!", "success");
         }
 
-        function hideHelpModal() {
-            document.getElementById("helpModal").classList.add("hidden");
+        function updateConnectionStatus() {
+            const key = localStorage.getItem("api_key") || "";
+            document.getElementById("apiKeyInput").value = key;
+
+            const isConnected = key.length > 10;
+            const indicators = [document.getElementById("statusIndicator"), document.getElementById("statusIndicatorMobile")];
+            const texts = [document.getElementById("statusText"), document.getElementById("statusTextMobile")];
+
+            indicators.forEach(el => {
+                if (el) el.className = isConnected ? "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "w-2.5 h-2.5 rounded-full bg-red-500";
+            });
+
+            texts.forEach(el => {
+                if (el) {
+                    el.innerText = isConnected ? "API Connected" : "No Key Set";
+                    if (isConnected) el.classList.replace("text-gray-400", "text-emerald-400");
+                }
+            });
         }
+
+        // TradingView Widget Generator on pair change
+        function onPairChanged() {
+            const pair = document.getElementById("pairSelect").value;
+            let tvSymbol = "";
+            if (pair === "BTCUSD") tvSymbol = "BINANCE:BTCUSDT";
+            else if (pair === "ETHUSD") tvSymbol = "BINANCE:ETHUSDT";
+            else if (pair === "EURUSD") tvSymbol = "FX:EURUSD";
+            else if (pair === "NAS100") tvSymbol = "OANDA:NAS100USD";
+
+            document.getElementById("tvChartContainer").innerHTML = `<div id="tv_chart" class="w-full h-full"></div>`;
+            
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": tvSymbol,
+                "interval": "60",
+                "timezone": "Asia/Jakarta",
+                "theme": "dark",
+                "style": "1",
+                "locale": "id",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "container_id": "tv_chart"
+            });
+        }
+
+        function copyToClipboard() {
+            const container = document.getElementById("reportBox");
+            const range = document.createRange();
+            range.selectNode(container);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            try {
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                showNotification("Analisis disalin ke papan klip!", "success");
+            } catch (err) {
+                showNotification("Gagal menyalin analisa", "error");
+            }
+        }
+
+        function readAloud() {
+            const text = document.getElementById("reportBox").innerText;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any active speech
+                const utterance = new SpeechSynthesisUtterance(text.substring(0, 800)); // limit length
+                utterance.lang = 'id-ID';
+                window.speechSynthesis.speak(utterance);
+                showNotification("Membacakan 800 karakter pertama analisis...", "info");
+            } else {
+                showNotification("Browser Anda tidak mendukung Text-to-Speech", "error");
+            }
+        }
+
+        function downloadReportAsTxt() {
+            const text = document.getElementById("reportBox").innerText;
+            const pair = document.getElementById("pairSelect").value;
+            const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `SMC_Analisa_${pair}_${new Date().toISOString().slice(0,10)}.txt`;
+            link.click();
+            showNotification("Unduhan TXT dimulai!", "success");
+        }
+
+        // On Load Initialization
+        window.onload = () => {
+            updateConnectionStatus();
+            onPairChanged();
+            updateSelectedTfCount();
+        };
     </script>
 </body>
 </html>
