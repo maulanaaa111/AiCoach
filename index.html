@@ -35,7 +35,7 @@
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght=300;400;500;600;700&family=Plus+Jakarta+Sans:wght=300;400;500;600;700&display=swap');
         
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -267,17 +267,26 @@
 
                             <!-- Interactive Pointing Container -->
                             <div id="imagePreviewContainer" class="hidden relative w-full aspect-video rounded-xl overflow-hidden bg-slate-950 flex flex-col items-center justify-center border border-slate-800">
-                                <div class="relative max-h-[350px] overflow-hidden" id="markerTargetArea" onclick="placeMarker(event)">
-                                    <img id="imagePreview" src="" alt="Pratinjau Chart" class="max-h-[350px] object-contain w-full">
+                                <div class="relative max-h-[350px] overflow-hidden w-full" id="markerTargetArea" onclick="placeMarker(event)">
+                                    <img id="imagePreview" src="" alt="Pratinjau Chart" class="max-h-[350px] object-contain w-full mx-auto">
                                     <!-- Dynamic markers will render here -->
-                                </div>
-                                <div class="absolute bottom-2 left-2 right-2 flex justify-between bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-[10px] text-slate-400">
-                                    <span class="flex items-center gap-1">Mode Pin: <span id="currentMarkerMode" class="font-bold text-emerald-400">Entry (H)</span></span>
-                                    <span>Klik tombol di kanan untuk ganti mode pin</span>
-                                    <button type="button" onclick="cycleMarkerMode(event)" class="text-[9px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-2 py-0.5 rounded transition">Siklus Pin</button>
                                 </div>
                                 <button type="button" onclick="removeImage(event)" class="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-600 text-white p-1.5 rounded-full shadow-lg transition z-10">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mode Pin Controller (Dipindahkan ke luar gambar agar tidak menghalangi klik) -->
+                        <div id="pinModeController" class="hidden mt-3 bg-slate-900/90 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs text-slate-400">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] uppercase tracking-wider font-cyber font-bold text-slate-500">Mode Pin Aktif:</span>
+                                <span id="currentMarkerMode" class="font-cyber font-bold text-emerald-400 px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">Entry (H)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-500 hidden sm:inline">Salah pasang? Ganti mode pin di sini:</span>
+                                <button type="button" onclick="cycleMarkerMode(event)" class="text-[10px] bg-cyan-600 hover:bg-cyan-500 text-white font-cyber font-bold px-3 py-1.5 rounded-lg transition shadow-md shadow-cyan-950/20">
+                                    Siklus Pin
                                 </button>
                             </div>
                         </div>
@@ -347,7 +356,6 @@
                                 <div class="absolute inset-0 rounded-xl border-2 border-transparent peer-checked:border-rose-500 pointer-events-none transition-all"></div>
                             </label>
                             <label class="relative flex items-center justify-center p-3 rounded-xl border border-slate-800/80 cursor-pointer hover:bg-slate-900/60 transition-all select-none">
-                                <input type="radio" name="tradeOutcome" value="Manual/BE" class="peer-only">
                                 <input type="radio" name="tradeOutcome" value="Manual/BE" class="peer sr-only">
                                 <span class="peer-checked:text-cyan-400 text-xs font-cyber font-bold flex items-center gap-1.5 text-slate-400">
                                     <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-neon-blue"></span> BE / Manual
@@ -781,13 +789,13 @@
             const indicator = document.getElementById('currentMarkerMode');
             if (currentMode === 'entry') {
                 indicator.innerText = "Entry (H)";
-                indicator.className = "font-bold text-emerald-400";
+                indicator.className = "font-cyber font-bold text-emerald-400 px-2.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20";
             } else if (currentMode === 'sl') {
                 indicator.innerText = "Stop Loss (M)";
-                indicator.className = "font-bold text-rose-400";
+                indicator.className = "font-cyber font-bold text-rose-400 px-2.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20";
             } else {
                 indicator.innerText = "Take Profit (B)";
-                indicator.className = "font-bold text-blue-400";
+                indicator.className = "font-cyber font-bold text-blue-400 px-2.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20";
             }
         }
 
@@ -840,6 +848,7 @@
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const pinLegend = document.getElementById('pinLegend');
+        const pinModeController = document.getElementById('pinModeController');
 
         dropZone.addEventListener('click', (e) => {
             // Only click input file if preview is hidden
@@ -882,6 +891,7 @@
                 uploadPlaceholder.classList.add('hidden');
                 imagePreviewContainer.classList.remove('hidden');
                 pinLegend.classList.remove('hidden');
+                pinModeController.classList.remove('hidden');
                 showToast("Screenshot Berhasil Diunggah! Letakkan Marker Pin pada Gambar.", 'success');
                 playSfx('success');
             }
@@ -896,6 +906,7 @@
             uploadPlaceholder.classList.remove('hidden');
             imagePreviewContainer.classList.add('hidden');
             pinLegend.classList.add('hidden');
+            pinModeController.classList.add('hidden');
             
             // Wipe markers
             markers = { entry: null, sl: null, tp: null };
