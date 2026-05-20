@@ -12,15 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Marked.js for Markdown Parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- PDF.js for PDF Parsing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- TradingView Widget Script -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     
     <script>
-        // Set worker for PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -111,30 +106,31 @@
                     <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                         <i class="fa-solid fa-book-bookmark text-chartAccent"></i> 1. Materi / Trading Rules
                     </h2>
-                    <span class="text-[10px] text-gray-500 bg-chartDark px-2 py-0.5 rounded border border-chartBorder">PDF & Teks Terpadu</span>
+                    <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-medium">Auto-Trained</span>
                 </div>
                 
                 <p class="text-xs text-gray-400 mb-3">
-                    Upload file PDF/TXT atau tulis manual. AI akan menggabungkan semuanya sebagai referensi analisanya.
+                    Modifikasi aturan atau materi trading di bawah ini. AI akan menggunakannya sebagai landasan utama untuk mendeteksi setups pasar secara otomatis.
                 </p>
 
-                <!-- File Upload Area -->
-                <div class="mb-4">
-                    <input type="file" id="fileInput" multiple accept=".pdf,.txt" class="hidden" onchange="handleFileUpload(event)">
-                    <button onclick="document.getElementById('fileInput').click()" 
-                        class="w-full border-2 border-dashed border-chartBorder hover:border-chartAccent/50 rounded-lg py-3 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-chartAccent transition-all group">
-                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
-                        <span class="text-xs font-semibold">Klik atau Drag PDF/TXT di sini</span>
+                <!-- Tabs/Presets of Material -->
+                <div class="grid grid-cols-3 gap-1.5 mb-3">
+                    <button onclick="loadPreset('smc')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center">
+                        SMC Basics
                     </button>
-                    <!-- File List Display -->
-                    <div id="fileList" class="mt-2 space-y-1"></div>
+                    <button onclick="loadPreset('ict')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center">
+                        ICT Core
+                    </button>
+                    <button onclick="loadPreset('clean')" class="text-[10px] bg-chartDark border border-chartBorder hover:border-chartAccent/50 rounded-md py-1 px-2 font-medium text-gray-300 transition-all text-center text-red-400">
+                        Kosongkan
+                    </button>
                 </div>
 
                 <!-- Textarea for manual rules -->
                 <div class="relative">
-                    <textarea id="tradingRulesText" rows="6" 
+                    <textarea id="tradingRulesText" rows="10" 
                         class="w-full bg-chartDark border border-chartBorder rounded-lg p-3 text-xs text-chartText focus:outline-none focus:border-chartAccent font-mono leading-relaxed"
-                        placeholder="Tambahan materi manual di sini..."></textarea>
+                        placeholder="Tulis atau paste aturan trading/materi kamu di sini..."></textarea>
                     <div class="absolute bottom-2 right-2 text-[10px] text-gray-500 font-mono" id="charCount">0 karakter</div>
                 </div>
             </div>
@@ -355,91 +351,82 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // State for uploaded files
-        let uploadedFilesContent = [];
+        // Presets of Materials (Knowledge Base)
+        const PRESETS = {
+            smc: `KONSEPAL DASAR SMART MONEY CONCEPTS (SMC) UNTUK ANALISA:
 
-        // PDF Extraction Logic
-        async function extractPdfText(file) {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            let fullText = "";
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                fullText += textContent.items.map(s => s.str).join(" ") + "\n";
+1. MARKET STRUCTURE SHIFT (MSS) / BREAK OF STRUCTURE (BOS):
+   - BOS (Break of Structure): Penerusan tren (bullish terus naik menembus high sebelumnya, atau bearish terus turun menembus low sebelumnya). Harus ditutup dengan body candle di TF yang dianalisa.
+   - MSS (Market Structure Shift) / CHOCH: Perubahan arah tren awal. Terjadi saat swing high/low terakhir yang menghasilkan titik terekstrim berhasil ditembus oleh candle penutupan.
+
+2. FAIR VALUE GAP (FVG) / IMBALANCE:
+   - FVG terbentuk dari struktur 3 candle berturut-turut.
+   - Area gap/kosong antara Low Candle ke-1 dengan High Candle ke-3 (untuk bearish gap), atau High Candle ke-1 dengan Low Candle ke-3 (untuk bullish gap).
+   - Area ini bertindak sebagai magnet harga untuk rebalance market.
+
+3. LIQUIDITY POOLS (BSL & SSL):
+   - Buy-Side Liquidity (BSL): Area likuiditas buy stop di atas swing high sebelumnya, double top, atau equal highs (EQH).
+   - Sell-Side Liquidity (SSL): Area likuiditas sell stop di bawah swing low sebelumnya, double bottom, atau equal lows (EQL).
+   - Strategi entry mencari Liquidity Sweep (harga mengambil likuiditas lalu berbalik arah dengan momentum kuat).
+
+4. ORDER BLOCK (OB):
+   - Candle berlawanan arah terakhir sebelum pergerakan impulsif naik/turun yang memecahkan struktur pasar (BOS/MSS).
+   - Valid jika meninggalkan FVG setelah pembentukannya.`,
+
+            ict: `ICT CORE CONCEPTS & TRADING RULES:
+
+1. THE POWER OF 3 (PO3):
+   - Fase pergerakan market harian: Accumulation (Akumulasi), Manipulation (Manipulasi/Judas Swing), Distribution (Distribusi/Perjalanan Tren).
+   - Bullish Day PO3: Open -> Turun ke bawah open (Manipulasi/buat Low) -> Rally impulsif naik (Distribusi/buat High) -> Close di dekat high.
+   - Bearish Day PO3: Open -> Naik ke atas open (Manipulasi/buat High) -> Drop impulsif turun (Distribusi/buat Low) -> Close di dekat low.
+
+2. LIQUIDITY SWEEP & REVERSAL:
+   - Cari area "Old High" atau "Old Low".
+   - Tunggu harga menembus level tersebut secara sekilas (Stop Hunt) lalu langsung ditarik kembali ke dalam range (rejection).
+   - Konfirmasi entry ideal di lower timeframe menggunakan MSS + FVG.
+
+3. MARKET BIAS:
+   - Tentukan Daily Bias menggunakan timeframe Daily (D1) atau H4.
+   - Cari Order Flow institusional. Jika bias bullish, fokus hanya mencari setup buy di diskon area (di bawah level 50% Fibonacci retracement).`,
+            clean: ""
+        };
+
+        // UI Pairs Configuration & Mappings
+        const ASSETS = {
+            BTCUSD: { tv: "BINANCE:BTCUSDT", binance: "BTCUSDT", label: "Bitcoin / USD" },
+            ETHUSD: { tv: "BINANCE:ETHUSDT", binance: "ETHUSDT", label: "Ethereum / USD" },
+            EURUSD: { tv: "FX:EURUSD", binance: "EURUSDT", label: "EUR / USD" },
+            GBPUSD: { tv: "FX:GBPUSD", binance: "GBPUSDT", label: "GBP / USD" },
+            AUDUSD: { tv: "FX:AUDUSD", binance: "AUDUSDT", label: "AUD / USD" },
+            XAUUSD: { tv: "OANDA:XAUUSD", binance: "PAXGUSDT", label: "Gold / USD" },
+            NAS100: { tv: "NASDAQ:NDX", binance: "BTCUSDT", label: "NAS100 (Index)", scale: 0.28 },
+            US30: { tv: "DJ:DJI", binance: "BTCUSDT", label: "US30 (Index)", scale: 0.62 }
+        };
+
+        // Timeframes mapping config (ID, Checkbox element, Binance Interval, UI Label)
+        const TIMEFRAMES = {
+            'D1': { id: 'D1', chkId: 'chkD1', interval: '1d', label: 'D1 (Bias)' },
+            'H4': { id: 'H4', chkId: 'chkH4', interval: '4h', label: 'H4 (Trend)' },
+            'H1': { id: 'H1', chkId: 'chkH1', interval: '1h', label: 'H1 (Intermediate)' },
+            'M30': { id: 'M30', chkId: 'chkM30', interval: '30m', label: 'M30 (Momentum)' },
+            'M15': { id: 'M15', chkId: 'chkM15', interval: '15m', label: 'M15 (Execution)' },
+            'M5': { id: 'M5', chkId: 'chkM5', interval: '5m', label: 'M5 (Scalp)' },
+            'M3': { id: 'M3', chkId: 'chkM3', interval: '3m', label: 'M3 (Fine scalp)' },
+            'M1': { id: 'M1', chkId: 'chkM1', interval: '1m', label: 'M1 (Micro Scalping)' }
+        };
+
+        let activeApiKey = "";
+        let tradingviewWidget = null;
+        let analysisRawText = "";
+
+        window.onload = function() {
+            // Load saved API key
+            const savedKey = localStorage.getItem("gemini_trading_api_key");
+            if (savedKey) {
+                document.getElementById("apiKeyInput").value = savedKey;
+                activeApiKey = savedKey;
+                showNotification("API Key otomatis termuat dari lokal sistem.", "success");
             }
-            return fullText;
-        }
-
-        async function handleFileUpload(event) {
-            const files = event.target.files;
-            const fileListContainer = document.getElementById('fileList');
-            
-            for (let file of files) {
-                const id = 'file-' + Date.now() + Math.random();
-                let fileText = "";
-                
-                // UI Item
-                const div = document.createElement('div');
-                div.id = id;
-                div.className = "flex items-center justify-between bg-chartDark p-2 rounded border border-chartBorder text-[10px] text-gray-400";
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 truncate">
-                        <i class="fa-solid fa-file-lines text-chartAccent"></i> ${file.name}
-                    </div>
-                    <button onclick="removeFile('${id}')" class="text-red-500 hover:text-red-400"><i class="fa-solid fa-times"></i></button>
-                `;
-                fileListContainer.appendChild(div);
-
-                // Extraction
-                try {
-                    if (file.type === "application/pdf") {
-                        fileText = await extractPdfText(file);
-                    } else {
-                        fileText = await file.text();
-                    }
-                    uploadedFilesContent.push({ id, content: fileText });
-                } catch (e) {
-                    showNotification(`Gagal membaca ${file.name}: ${e.message}`, "error");
-                }
-            }
-        }
-
-        function removeFile(id) {
-            document.getElementById(id).remove();
-            uploadedFilesContent = uploadedFilesContent.filter(f => f.id !== id);
-        }
-
-        // --- Updated Start Analysis ---
-        async function startAutomatedAnalysis() {
-            if (!activeApiKey) {
-                showNotification("Tolong simpan Gemini API Key Anda!", "error");
-                return;
-            }
-
-            // GABUNGKAN MANUAL TEXT + UPLOADED PDF/TXT
-            const manualRules = document.getElementById("tradingRulesText").value.trim();
-            const combinedContent = manualRules + "\n\n" + uploadedFilesContent.map(f => f.content).join("\n\n");
-            
-            if (!combinedContent.trim()) {
-                showNotification("Knowledge base kosong. Tambahkan text atau upload file.", "error");
-                return;
-            }
-            
-            // ... (existing analysis logic)
-            // Use combinedContent instead of just manual input for the systemPrompt
-            // ...
-            
-            const systemPrompt = `Kamu adalah AI Quantitative Technical Analyst. Gunakan referensi materi dari file dan text yang diunggah berikut:
-            
-            --- MATERI REFERENSI ---
-            ${combinedContent}
-            ------------------------
-            
-            Analisalah data market berikut...`;
-            
-            // ... (rest of the existing logic)
-        }
 
             // Load default preset (SMC Basics)
             loadPreset('smc');
